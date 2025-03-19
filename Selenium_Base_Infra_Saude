@@ -79,6 +79,8 @@ time.sleep(2)
 # ===== PASSO 5: Coletar os dados =====
 dados = []
 
+dados = []
+
 # Iterar pelas 17 páginas
 for pagina in range(17):
     print(f"Extraindo dados da página {pagina + 1}...")
@@ -88,18 +90,35 @@ for pagina in range(17):
     
     for botao in botoes_detalhes:
         try:
+            # Capturar Gestão e SUS antes de abrir os detalhes
+            gestao = botao.find_element(By.XPATH, "./ancestor::tr/td[@data-title=\"'Gestão'\"]").text
+            sus = botao.find_element(By.XPATH, "./ancestor::tr/td[@data-title=\"'Atende SUS'\"]").text
+            
+            # Abrir os detalhes
             botao.click()
             time.sleep(1)
 
-            # Capturar nome do estabelecimento
+            # Nome
             nome = driver.find_element(By.XPATH, "//label[text()='Nome']/following-sibling::input").get_attribute('value')
 
-            # Adicionar aos dados
-            dados.append({'Nome': nome})
-            print(f"→ Nome capturado: {nome}")
+            # Bairro
+            bairro = driver.find_element(By.XPATH, "//label[text()='Bairro']/following-sibling::input").get_attribute('value')
 
-            # Fechar janela modal
-            fechar = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@data-dismiss='modal']")))
+            # CEP
+            cep = driver.find_element(By.XPATH, "//label[text()='CEP']/following-sibling::input").get_attribute('value')
+
+            # Adicionar aos dados
+            dados.append({
+                'Nome': nome,
+                'CEP': cep,
+                'Bairro': bairro,
+                'Gestão': gestao,
+                'SUS': sus
+            })
+            print(f"→ Nome capturado: {nome} | CEP: {cep} | Bairro: {bairro} | Gestão: {gestao} | SUS: {sus}")
+
+            # Fechar a janela
+            fechar = driver.find_element(By.XPATH, '//*[@id="dadosBasicosModal"]/div/div/div[3]/button')
             fechar.click()
             time.sleep(0.5)
         
@@ -107,22 +126,22 @@ for pagina in range(17):
             print(f"Erro ao capturar detalhes: {e}")
             continue
     
-    # Tentar ir para a próxima página
+    # Próxima página
     try:
         proxima_pagina = driver.find_element(By.XPATH, "//a[@ng-switch-when='next']")
         proxima_pagina.click()
         time.sleep(2)
     except:
-        print("Não há mais páginas disponíveis.")
+        print("Fim da coleta")
         break
 
 # ===== PASSO 6: Salvar os dados =====
 df = pd.DataFrame(dados)
 
 # Salvar em CSV
-df.to_csv('dados_estabelecimentos.csv', index=False)
-print("\n✅ Dados salvos em 'dados_estabelecimentos.csv'")
+df.to_csv('dados_saude.csv', index=False)
+print("\n Dados salvos em 'dados_estabelecimentos.csv'")
 
 # ===== ENCERRAR O DRIVER =====
 driver.quit()
-print("\n✅ Finalizado com sucesso!")
+print("\n Finalizado com sucesso!")
